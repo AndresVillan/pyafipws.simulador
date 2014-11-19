@@ -12,6 +12,29 @@ def dummy():
     "Metodo dummy para verificacion de funcionamiento"
     db.request.insert(method='dummy')
     return {'FEDummyResult': {'AppServer': 'OK', 'DbServer': 'OK', 'AuthServer': 'OK'}}
+
+@service.soap('FECompUltimoAutorizado',
+    returns={'FECompUltimoAutorizadoResult': {
+         'PtoVta': int, 'CbteTipo': int, 'CbteNro': int,
+         'Events': [{'Evt': {'Code': int, 'Msg': unicode}}], 
+         'Errors': [{'Err': {'Code': int, 'Msg': unicode}}]}},
+    args={
+        'Auth': {'Token': str, 'Sign': str, 'Cuit': str},
+        'PtoVta': int, 'CbteTipo': int,
+        })
+def comp_ultimo_autorizado(Auth, PtoVta, CbteTipo): 
+    u"Retorna el ultimo comprobante autorizado para el tipo de comprobante / cuit / punto de venta ingresado / Tipo de Emisión"
+    try:
+        db.request.insert(method='comp_ultimo_autorizado', args=repr({'Auth': Auth, 'PtoVta': PtoVta, 'CbteTipo': CbteTipo}))
+        return {'FECompUltimoAutorizadoResult': {
+             'PtoVta': PtoVta, 'CbteTipo': CbteTipo, 'CbteNro': 9999,
+             'Events': [{'Evt': {'Code': 0, 'Msg': 'Esto es una SIMULACION!!!'}}], 
+             'Errors': [{'Err': {'Code': 10001, 'Msg': 'Datos no validos - simulados'}}],
+             }}
+    except Exception, e:
+        #raise
+        ##raise RuntimeError(repr(e) + repr({'Auth': Auth, 'FeCAEReq': FeCAEReq}))
+        raise RuntimeError("%s" % f['FECAEDetRequest'].keys())
  
 @service.soap('FECAESolicitar',
     returns={'FECAESolicitarResult': {
@@ -116,6 +139,24 @@ def test_dummy():
     try:
         ret = client.FEDummy()
     except:
+        ret = client.xml_response
+        
+    response.view = "generic.html"
+    return dict(ret=ret)
+
+def test_ult():
+    from gluon.contrib.pysimplesoap.client import SoapClient
+
+    WSDL="https://www.sistemasagiles.com.ar/simulador/wsfev1/call/soap?WSDL=None"
+    client = SoapClient(wsdl = WSDL)
+    
+    try:
+        ret = client.FECompUltimoAutorizado(
+                        Auth={'Token': 'token', 'Sign': 'sign', 'Cuit': '20267565393'},
+                        PtoVta=1, CbteTipo=10
+                        )
+    except:    
+        raise
         ret = client.xml_response
         
     response.view = "generic.html"
